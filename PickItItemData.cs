@@ -1,6 +1,6 @@
-using ExileCore;
-using ExileCore.PoEMemory.Components;
-using ExileCore.PoEMemory.Elements;
+using ExileCore2;
+using ExileCore2.PoEMemory.Components;
+using ExileCore2.PoEMemory.Elements;
 using ItemFilterLibrary;
 
 namespace PickIt;

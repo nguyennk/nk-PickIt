@@ -1,25 +1,25 @@
-using ExileCore;
-using ExileCore.PoEMemory.Components;
-using ExileCore.PoEMemory.Elements;
-using ExileCore.PoEMemory.MemoryObjects;
-using ExileCore.Shared;
-using ExileCore.Shared.Cache;
-using ExileCore.Shared.Enums;
-using ExileCore.Shared.Helpers;
+using ExileCore2;
+using ExileCore2.PoEMemory.Components;
+using ExileCore2.PoEMemory.Elements;
+using ExileCore2.PoEMemory.MemoryObjects;
+using ExileCore2.Shared;
+using ExileCore2.Shared.Cache;
+using ExileCore2.Shared.Enums;
+using ExileCore2.Shared.Helpers;
 using ImGuiNET;
 using ItemFilterLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using ExileCore.PoEMemory;
-using SharpDX;
-using SDxVector2 = SharpDX.Vector2;
+using ExileCore2.PoEMemory;
+using RectangleF = ExileCore2.Shared.RectangleF;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 
@@ -40,7 +40,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     public PickIt()
     {
-        Name = "PickIt With Linq";
         _inventorySlotsCache = new FrameCache<bool[,]>(() => GetContainer2DArray(_inventoryItems));
         _chestLabels = new TimeCache<List<LabelOnGround>>(UpdateChestList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
@@ -108,17 +107,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private DateTime DisableLazyLootingTill { get; set; }
 
-    public override Job Tick()
+    public override void Tick()
     {
         var playerInvCount = GameController?.Game?.IngameState?.Data?.ServerData?.PlayerInventories?.Count;
         if (playerInvCount is null or 0)
-            return null;
+            return;
 
         _inventoryItems = GameController.Game.IngameState.Data.ServerData.PlayerInventories[0].Inventory;
         DrawIgnoredCellsSettings();
         if (Input.GetKeyState(Settings.LazyLootingPauseKey)) DisableLazyLootingTill = DateTime.Now.AddSeconds(2);
 
-        return null;
+        return;
     }
 
     public override void Render()
@@ -247,7 +246,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.NoLazyLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && Vector3.Distance(GameController.Player.PosNum, x.GetComponent<Render>().PosNum) < Settings.PickupRange)) return false;
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupRange)) return false;
         }
         catch (NullReferenceException)
         {
@@ -263,8 +262,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return false;
         }
 
-        var itemPos = item.QueriedItem.Entity.PosNum;
-        var playerPos = GameController.Player.PosNum;
+        var itemPos = item.QueriedItem.Entity.Pos;
+        var playerPos = GameController.Player.Pos;
         return Math.Abs(itemPos.Z - playerPos.Z) <= 50 &&
                itemPos.Xy().DistanceSquared(playerPos.Xy()) <= 275 * 275;
     }
@@ -278,7 +277,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         var center = (customRect ?? element.GetClientRect()).Center;
 
-        var gameWindowRect = GameController.Window.GetWindowRectangleTimeCache with { Location = SDxVector2.Zero };
+        var gameWindowRect = GameController.Window.GetWindowRectangleTimeCache with { Location = Vector2.Zero };
         gameWindowRect.Inflate(-36, -36);
         return gameWindowRect.Contains(center.X, center.Y);
     }
@@ -330,7 +329,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             where labelOnGround?.Label is { IsValid: true, Address: > 0, IsVisible: true }
             let itemOnGround = labelOnGround.ItemOnGround
             where itemOnGround?.Metadata is { } metadata && regex.IsMatch(metadata)
-            let dist = GameController?.Player?.GridPosNum.DistanceSquared(itemOnGround.GridPosNum)
+            let dist = GameController?.Player?.GridPos.DistanceSquared(itemOnGround.GridPos)
             orderby dist
             select labelOnGround;
 
@@ -472,7 +471,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            var position = label.GetClientRect().ClickRandomNum(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft.ToVector2Num();
+            var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
             if (_sinceLastClick.ElapsedMilliseconds > Settings.PauseBetweenClicks)
             {
                 if (!IsTargeted(item, label))

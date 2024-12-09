@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
-using ExileCore.Shared.Attributes;
-using ExileCore.Shared.Interfaces;
-using ExileCore.Shared.Nodes;
+using ExileCore2.Shared.Attributes;
+using ExileCore2.Shared.Interfaces;
+using ExileCore2.Shared.Nodes;
 using ImGuiNET;
 using Newtonsoft.Json;
 

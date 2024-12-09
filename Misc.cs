@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using ExileCore.PoEMemory.Components;
-using ExileCore.PoEMemory.MemoryObjects;
-using SharpDX;
+using System.Numerics;
+using ExileCore2.PoEMemory.Components;
+using ExileCore2.PoEMemory.MemoryObjects;
 using ItemFilterLibrary;
 
 namespace PickIt;
