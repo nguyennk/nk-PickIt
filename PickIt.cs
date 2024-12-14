@@ -157,18 +157,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         var opened = true;
 
-        const ImGuiWindowFlags moveableFlag = ImGuiWindowFlags.NoScrollbar |
-                                              ImGuiWindowFlags.NoTitleBar |
-                                              ImGuiWindowFlags.NoFocusOnAppearing;
-
         const ImGuiWindowFlags nonMoveableFlag = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground |
                                                  ImGuiWindowFlags.NoTitleBar |
                                                  ImGuiWindowFlags.NoInputs |
                                                  ImGuiWindowFlags.NoFocusOnAppearing;
 
-        if (ImGui.Begin($"{Name}##InventoryCellMap", ref opened,
-                Settings.MoveInventoryView.Value ? moveableFlag : nonMoveableFlag))
+        ImGui.SetNextWindowPos(Settings.InventoryPos.Value);
+        if (ImGui.Begin($"{Name}##InventoryCellMap", ref opened,nonMoveableFlag))
         {
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0,0));
+
             var numb = 0;
             for (var i = 0; i < 5; i++)
             for (var j = 0; j < 12; j++)
@@ -180,6 +179,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 numb += 1;
             }
+
+            ImGui.PopStyleVar(2);
 
             ImGui.End();
         }
