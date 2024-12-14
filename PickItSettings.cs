@@ -7,6 +7,7 @@ using ExileCore2.Shared.Interfaces;
 using ExileCore2.Shared.Nodes;
 using ImGuiNET;
 using Newtonsoft.Json;
+using System.Numerics;
 
 namespace PickIt;
 
@@ -14,7 +15,7 @@ public class PickItSettings : ISettings
 {
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
     public ToggleNode ShowInventoryView { get; set; } = new ToggleNode(true);
-    public ToggleNode MoveInventoryView { get; set; } = new ToggleNode(false);
+    public RangeNode<Vector2> InventoryPos { get; set; } = new RangeNode<Vector2>(new Vector2(0, 0), Vector2.Zero, new Vector2(4000, 4000));
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
