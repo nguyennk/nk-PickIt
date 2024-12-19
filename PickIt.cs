@@ -131,7 +131,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     if (groundItem != null)
                     {
                         var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
-                            filter.Matches(new ItemData(groundItem.ItemOnGround, GameController))) ?? false);
+                            filter.Matches(new ItemData(groundItem, GameController))) ?? false);
                         if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
                         {
                             _sinceLastClick.Restart();
