@@ -28,6 +28,7 @@ namespace PickIt;
 public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 {
     private readonly CachedValue<List<LabelOnGround>> _chestLabels;
+    private readonly CachedValue<List<LabelOnGround>> _doorLabels;
     private readonly CachedValue<LabelOnGround> _portalLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
@@ -45,6 +46,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         _inventorySlotsCache = new FrameCache<bool[,]>(() => GetContainer2DArray(_inventoryItems));
         _chestLabels = new TimeCache<List<LabelOnGround>>(UpdateChestList, 200);
+        _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
         _portalLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"^Metadata/(MiscellaneousObjects|Effects/Microtransactions)/.*Portal"), 200);
     }
@@ -226,13 +228,29 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   (Settings.ClickQuestChests && path.StartsWith("Metadata/Chests/QuestChests/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/LeaguesExpedition/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/LegionChests/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/Blight", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/Breach/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/IncursionChest", StringComparison.Ordinal)) &&
+                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
+        }
+
+        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        {
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+                .Where(x => x.Address != 0 &&
+                            x.IsVisible &&
+                            IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+
+        return [];
+    }
+
+    private List<LabelOnGround> UpdateDoorList()
+    {
+        bool IsFittingEntity(Entity entity)
+        {
+            return entity?.Path is { } path &&
+                   path.Contains("DoorRandom", StringComparison.Ordinal);
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
@@ -451,6 +469,19 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
                 {
                     await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _chestLabels.ForceUpdate);
+                    return true;
+                }
+            }
+
+            if (Settings.ClickDoors)
+            {
+                var chestLabel = _doorLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _doorLabels.ForceUpdate);
                     return true;
                 }
             }

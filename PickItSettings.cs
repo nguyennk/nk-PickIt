@@ -29,7 +29,7 @@ public class PickItSettings : ISettings
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
-    public ToggleNode ClickQuestChests { get; set; } = new ToggleNode(true);
+    public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
     public ToggleNode ItemizeCorpses { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
@@ -46,6 +46,7 @@ public class PickItSettings : ISettings
     [JsonIgnore]
     public FilterNode Filters { get; } = new FilterNode();
 
+    [Menu(null, "For debugging. Highlights items if they match an existing filter")]
     [JsonIgnore]
     public ToggleNode DebugHighlight { get; set; } = new ToggleNode(false);
 }
