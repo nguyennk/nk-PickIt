@@ -226,7 +226,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   (Settings.ClickChests && path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
+                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
         }
 
