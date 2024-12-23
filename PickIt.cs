@@ -249,8 +249,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is { } path &&
-                   path.Contains("DoorRandom", StringComparison.Ordinal);
+            return entity?.Path is { } path && (
+                    path.Contains("DoorRandom", StringComparison.Ordinal) ||
+                    path.Contains("Door", StringComparison.Ordinal) ||
+                    path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
@@ -460,6 +462,19 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
+            if (Settings.ClickDoors)
+            {
+                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(doorLabel.ItemOnGround, doorLabel.Label, null, _doorLabels.ForceUpdate);
+                    return true;
+                }
+            }
+
             if (Settings.ClickChests)
             {
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
@@ -469,19 +484,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
                 {
                     await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _chestLabels.ForceUpdate);
-                    return true;
-                }
-            }
-
-            if (Settings.ClickDoors)
-            {
-                var chestLabel = _doorLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
-                    IsLabelClickable(x.Label, null));
-
-                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
-                {
-                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _doorLabels.ForceUpdate);
                     return true;
                 }
             }
