@@ -218,8 +218,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
     }
 
+    private bool IsItSafeToPickit()
+    {
+        if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
+                    .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
+                              && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupRange))
+            return false;
+        else
+            return true;
+    }
+
     private bool DoWePickThis(PickItItemData item)
     {
+        if (!IsItSafeToPickit())
+            return false;
+
         return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
     }
 
@@ -231,6 +245,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                    (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
         }
+
+        if (!IsItSafeToPickit())
+            return [];
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
         {
@@ -255,6 +272,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
+        if (!IsItSafeToPickit())
+            return [];
+
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
@@ -274,6 +294,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             return entity?.Path is "Metadata/Terrain/Leagues/Necropolis/Objects/NecropolisCorpseMarker";
         }
+
+        if (!IsItSafeToPickit())
+            return [];
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
         {
