@@ -160,6 +160,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             {
                 Graphics.DrawFrame(item.QueriedItem.ClientRect, Color.Violet, 5);
             }
+            foreach (var door in _doorLabels.Value)
+            {
+                Graphics.DrawFrame(door.Label.GetClientRect(), Color.Violet, 5);
+            }
+            foreach (var chest in _chestLabels.Value)
+            {
+                Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
+            }
         }
         
         if (GetWorkMode() != WorkMode.Stop)
@@ -233,8 +241,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         if (!IsItSafeToPickit())
             return false;
-
-        return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
+        else
+            return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
     }
 
     private List<LabelOnGround> UpdateChestList()
@@ -269,6 +277,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return entity?.Path is { } path && (
                     path.Contains("DoorRandom", StringComparison.Ordinal) ||
                     path.Contains("Door", StringComparison.Ordinal) ||
+                    path.Contains("Endgame/TowerCompletion", StringComparison.Ordinal) ||
                     path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
@@ -337,6 +346,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         var itemPos = item.QueriedItem.Entity.Pos;
+        var playerPos = GameController.Player.Pos;
+        return Math.Abs(itemPos.Z - playerPos.Z) <= 50 &&
+               itemPos.Xy().DistanceSquared(playerPos.Xy()) <= 275 * 275;
+    }
+
+    private bool ShouldLazyLootDoorOrChest(LabelOnGround label)
+    {
+        if (!Settings.LazyLooting)
+            return false;
+
+        if (label == null)
+        {
+            return false;
+        }
+
+        var itemPos = label.ItemOnGround.Pos;
         var playerPos = GameController.Player.Pos;
         return Math.Abs(itemPos.Z - playerPos.Z) <= 50 &&
                itemPos.Xy().DistanceSquared(playerPos.Xy()) <= 275 * 275;
@@ -470,7 +495,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         var pickUpThisItem = GetItemsToPickup(true).FirstOrDefault();
         var workMode = GetWorkMode();
-        if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && ShouldLazyLoot(pickUpThisItem))
+        if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
+            ShouldLazyLootDoorOrChest(_doorLabels.Value.FirstOrDefault()) || ShouldLazyLootDoorOrChest(_chestLabels.Value.FirstOrDefault())))
         {
             if (Settings.ItemizeCorpses)
             {
