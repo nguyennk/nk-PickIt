@@ -30,6 +30,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<List<LabelOnGround>> _chestLabels;
     private readonly CachedValue<List<LabelOnGround>> _doorLabels;
     private readonly CachedValue<LabelOnGround> _portalLabel;
+    private readonly CachedValue<LabelOnGround> _transitionLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
@@ -49,6 +50,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
         _portalLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"^Metadata/(MiscellaneousObjects|Effects/Microtransactions)/.*Portal"), 200);
+        _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
     }
 
     public override bool Initialise()
@@ -340,11 +342,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (Settings.LazyLooting && Settings.ClickDoors)
+        if (Settings.LazyLooting)
         {
-            foreach (var door in _doorLabels.Value)
+            if (Settings.ClickDoors)
             {
-                if (door.ItemOnGround.DistancePlayer < 25)
+                foreach (var door in _doorLabels.Value)
+                {
+                    if (door.ItemOnGround.DistancePlayer < 15)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if (Settings.ClickTransitions)
+            {
+                var transitionLabel = _transitionLabel?.Value;
+                if (transitionLabel != null && transitionLabel.ItemOnGround.DistancePlayer < 15)
                 {
                     return true;
                 }
@@ -545,7 +558,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            if (pickUpThisItem == null)
+            if (Settings.ClickTransitions)
+            {
+                var transitionLabel = _transitionLabel?.Value;
+                if (transitionLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= transitionLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _portalLabel.ForceUpdate);
+                    return true;
+                }
+            }
+
+                if (pickUpThisItem == null)
             {
                 return true;
             }
