@@ -340,10 +340,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (item == null)
+        if (Settings.LazyLooting && Settings.ClickDoors)
         {
-            return false;
+            foreach (var door in _doorLabels.Value)
+            {
+                if (door.ItemOnGround.DistancePlayer < 25)
+                {
+                    return true;
+                }
+            }
         }
+        if (item == null)
+            return false;
 
         var itemPos = item.QueriedItem.Entity.Pos;
         var playerPos = GameController.Player.Pos;
