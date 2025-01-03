@@ -277,7 +277,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return entity?.Path is { } path && (
                     path.Contains("DoorRandom", StringComparison.Ordinal) ||
                     path.Contains("Door", StringComparison.Ordinal) ||
-                    path.Contains("Endgame/TowerCompletion", StringComparison.Ordinal) ||
+                    path.Contains("AreaTransition_Animate", StringComparison.Ordinal) ||
+                    path.Contains("TowerCompletion", StringComparison.Ordinal) ||
                     path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
