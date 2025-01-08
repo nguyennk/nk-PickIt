@@ -35,6 +35,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
+    private bool _isCurrentlyPicking;
     private long _lastClick;
     private List<ItemFilter> _itemFilters;
     private bool _pluginBridgeModeOverride;
@@ -70,6 +71,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         LoadRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
         GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
+        GameController.PluginBridge.SaveMethod("PickIt.IsCurrentlyPicking", () => _isCurrentlyPicking);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
         return true;
     }
@@ -574,6 +576,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
 
             pickUpThisItem.AttemptedPickups++;
+            if (Settings.ShouldPickitWarnTheBridge)
+                _isCurrentlyPicking = true;
             await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, pickUpThisItem.QueriedItem.ClientRect, () => { });
         }
 
@@ -597,50 +601,60 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
     {
-        var tryCount = 0;
-        while (tryCount < 3)
+        if (Settings.ShouldPickitWarnTheBridge)
+            _isCurrentlyPicking = true;
+        try
         {
-            if (!IsLabelClickable(label, customRect))
+            var tryCount = 0;
+            while (tryCount < 3)
             {
-                onNonClickable();
-                return true;
-            }
-
-            if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
-            {
-                if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
+                if (!IsLabelClickable(label, customRect))
                 {
-                    await TaskUtils.NextFrame();
-                    continue;
+                    onNonClickable();
+                    return true;
                 }
-            }
 
-            var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
-            if (OkayToClick)
-            {
-                if (!IsTargeted(item, label))
+                if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
                 {
-                    await SetCursorPositionAsync(position, item, label);
-                }
-                else
-                {
-                    if (await CheckPortal(label)) return true;
-                    if (!IsTargeted(item, label))
+                    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
                     {
                         await TaskUtils.NextFrame();
                         continue;
                     }
-
-                    Input.Click(MouseButtons.Left);
-                    _sinceLastClick.Restart();
-                    tryCount++;
                 }
+
+                var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                if (OkayToClick)
+                {
+                    if (!IsTargeted(item, label))
+                    {
+                        await SetCursorPositionAsync(position, item, label);
+                    }
+                    else
+                    {
+                        if (await CheckPortal(label)) return true;
+                        if (!IsTargeted(item, label))
+                        {
+                            await TaskUtils.NextFrame();
+                            continue;
+                        }
+
+                        Input.Click(MouseButtons.Left);
+                        _sinceLastClick.Restart();
+                        tryCount++;
+                    }
+                }
+
+                await TaskUtils.NextFrame();
             }
 
-            await TaskUtils.NextFrame();
+            return true;
         }
-
-        return true;
+        finally
+        {
+            if (Settings.ShouldPickitWarnTheBridge)
+                _isCurrentlyPicking = false;
+        }
     }
 
     private async Task<bool> CheckPortal(Element label)
