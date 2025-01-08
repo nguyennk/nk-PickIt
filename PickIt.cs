@@ -70,8 +70,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         Settings.ReloadFilters.OnPressed = LoadRuleFiles;
         LoadRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
-        GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
-        GameController.PluginBridge.SaveMethod("PickIt.IsCurrentlyPicking", () => _isCurrentlyPicking);
+        GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false && _isCurrentlyPicking);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
         return true;
     }
@@ -173,7 +172,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
             }
         }
-        
+
         if (GetWorkMode() != WorkMode.Stop)
         {
             TaskUtils.RunOrRestart(ref _pickUpTask, RunPickerIterationAsync);
@@ -181,6 +180,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         else
         {
             _pickUpTask = null;
+        }
+
+        if (_pickUpTask?.GetAwaiter().IsCompleted != false)
+        {
+            _isCurrentlyPicking = false;
         }
 
         if (Settings.FilterTest.Value is { Length: > 0 } &&
@@ -570,14 +574,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-                if (pickUpThisItem == null)
+            if (pickUpThisItem == null)
             {
                 return true;
             }
 
             pickUpThisItem.AttemptedPickups++;
-            if (Settings.ShouldPickitWarnTheBridge)
-                _isCurrentlyPicking = true;
             await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, pickUpThisItem.QueriedItem.ClientRect, () => { });
         }
 
@@ -601,8 +603,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
     {
-        if (Settings.ShouldPickitWarnTheBridge)
-            _isCurrentlyPicking = true;
+        _isCurrentlyPicking = true;
         try
         {
             var tryCount = 0;
@@ -652,8 +653,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
         finally
         {
-            if (Settings.ShouldPickitWarnTheBridge)
-                _isCurrentlyPicking = false;
+            _isCurrentlyPicking = false;
         }
     }
 
