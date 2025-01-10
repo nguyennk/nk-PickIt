@@ -30,10 +30,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<List<LabelOnGround>> _chestLabels;
     private readonly CachedValue<List<LabelOnGround>> _doorLabels;
     private readonly CachedValue<LabelOnGround> _portalLabel;
+    private readonly CachedValue<LabelOnGround> _transitionLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
+    private bool _isCurrentlyPicking;
     private long _lastClick;
     private List<ItemFilter> _itemFilters;
     private bool _pluginBridgeModeOverride;
@@ -49,6 +51,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
         _portalLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"^Metadata/(MiscellaneousObjects|Effects/Microtransactions)/.*Portal"), 200);
+        _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
     }
 
     public override bool Initialise()
@@ -67,7 +70,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         Settings.ReloadFilters.OnPressed = LoadRuleFiles;
         LoadRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
-        GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
+        GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false && _isCurrentlyPicking);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
         return true;
     }
@@ -169,7 +172,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
             }
         }
-        
+
         if (GetWorkMode() != WorkMode.Stop)
         {
             TaskUtils.RunOrRestart(ref _pickUpTask, RunPickerIterationAsync);
@@ -177,6 +180,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         else
         {
             _pickUpTask = null;
+        }
+
+        if (_pickUpTask?.GetAwaiter().IsCompleted != false)
+        {
+            _isCurrentlyPicking = false;
         }
 
         if (Settings.FilterTest.Value is { Length: > 0 } &&
@@ -341,10 +349,29 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (item == null)
+        if (Settings.LazyLooting)
         {
-            return false;
+            if (Settings.ClickDoors)
+            {
+                foreach (var door in _doorLabels.Value)
+                {
+                    if (door.ItemOnGround.DistancePlayer < 15)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if (Settings.ClickTransitions)
+            {
+                var transitionLabel = _transitionLabel?.Value;
+                if (transitionLabel != null && transitionLabel.ItemOnGround.DistancePlayer < 15)
+                {
+                    return true;
+                }
+            }
         }
+        if (item == null)
+            return false;
 
         var itemPos = item.QueriedItem.Entity.Pos;
         var playerPos = GameController.Player.Pos;
@@ -538,6 +565,16 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
+            if (Settings.ClickTransitions)
+            {
+                var transitionLabel = _transitionLabel?.Value;
+                if (transitionLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= transitionLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _portalLabel.ForceUpdate);
+                    return true;
+                }
+            }
+
             if (pickUpThisItem == null)
             {
                 return true;
@@ -567,50 +604,58 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
     {
-        var tryCount = 0;
-        while (tryCount < 3)
+        _isCurrentlyPicking = true;
+        try
         {
-            if (!IsLabelClickable(label, customRect))
+            var tryCount = 0;
+            while (tryCount < 3)
             {
-                onNonClickable();
-                return true;
-            }
-
-            if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
-            {
-                if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
+                if (!IsLabelClickable(label, customRect))
                 {
-                    await TaskUtils.NextFrame();
-                    continue;
+                    onNonClickable();
+                    return true;
                 }
-            }
 
-            var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
-            if (OkayToClick)
-            {
-                if (!IsTargeted(item, label))
+                if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
                 {
-                    await SetCursorPositionAsync(position, item, label);
-                }
-                else
-                {
-                    if (await CheckPortal(label)) return true;
-                    if (!IsTargeted(item, label))
+                    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
                     {
                         await TaskUtils.NextFrame();
                         continue;
                     }
-
-                    Input.Click(MouseButtons.Left);
-                    _sinceLastClick.Restart();
-                    tryCount++;
                 }
+
+                var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                if (OkayToClick)
+                {
+                    if (!IsTargeted(item, label))
+                    {
+                        await SetCursorPositionAsync(position, item, label);
+                    }
+                    else
+                    {
+                        if (await CheckPortal(label)) return true;
+                        if (!IsTargeted(item, label))
+                        {
+                            await TaskUtils.NextFrame();
+                            continue;
+                        }
+
+                        Input.Click(MouseButtons.Left);
+                        _sinceLastClick.Restart();
+                        tryCount++;
+                    }
+                }
+
+                await TaskUtils.NextFrame();
             }
 
-            await TaskUtils.NextFrame();
+            return true;
         }
-
-        return true;
+        finally
+        {
+            _isCurrentlyPicking = false;
+        }
     }
 
     private async Task<bool> CheckPortal(Element label)
