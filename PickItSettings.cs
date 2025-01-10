@@ -19,8 +19,8 @@ public class PickItSettings : ISettings
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
-    public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 2500);
-    public RangeNode<int> PickupSafeRange { get; set; } = new RangeNode<int>(600, 1, 2500);
+    public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(500, 1, 2500);
+    public RangeNode<int> PickupSafeRange { get; set; } = new RangeNode<int>(1000, 1, 2500);
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
