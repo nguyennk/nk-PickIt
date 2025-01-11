@@ -121,7 +121,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (playerInvCount is null or 0)
             return;
 
-        #region HoverPickit
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
             var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
@@ -146,7 +145,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
         }
-        #endregion
 
         _inventoryItems = GameController.Game.IngameState.Data.ServerData.PlayerInventories[0].Inventory;
         DrawIgnoredCellsSettings();
@@ -616,7 +614,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return true;
                 }
 
-                if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
+                if (Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
                 {
                     if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
                     {
