@@ -239,7 +239,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupRange))
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.ItemPickitRange))
             return false;
         else
             return true;
@@ -258,7 +258,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
+                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal) ||
+                   path.Contains("CampsiteChest", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
         }
 
@@ -337,7 +338,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.NoLazyLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupRange)) return false;
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.ItemPickitRange)) 
+                return false;
         }
         catch (NullReferenceException)
         {
@@ -369,6 +371,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
         }
+
         if (item == null)
             return false;
 
@@ -384,9 +387,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return false;
 
         if (label == null)
-        {
             return false;
-        }
 
         var itemPos = label.ItemOnGround.Pos;
         var playerPos = GameController.Player.Pos;
@@ -525,10 +526,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
             ShouldLazyLootDoorOrChest(_doorLabels.Value.FirstOrDefault()) || ShouldLazyLootDoorOrChest(_chestLabels.Value.FirstOrDefault())))
         {
-            if (Settings.ItemizeCorpses)
+            if (Settings.ClickCorpses)
             {
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    x.ItemOnGround.DistancePlayer < Settings.ItemPickitRange &&
                     IsLabelClickable(x.Label, null));
 
                 if (corpseLabel != null)
@@ -541,7 +542,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.ClickDoors)
             {
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    x.ItemOnGround.DistancePlayer < Settings.ItemPickitRange &&
                     IsLabelClickable(x.Label, null));
 
                 if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
@@ -554,7 +555,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.ClickChests)
             {
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    x.ItemOnGround.DistancePlayer < Settings.ItemPickitRange &&
                     IsLabelClickable(x.Label, null));
 
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
@@ -589,7 +590,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private IEnumerable<PickItItemData> GetItemsToPickup(bool filterAttempts)
     {
         var labels = GameController.Game.IngameState.IngameUi.ItemsOnGroundLabelElement.VisibleGroundItemLabels?
-            .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.PickupRange)
+            .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.ItemPickitRange)
             .OrderBy(x => x.Entity?.DistancePlayer ?? int.MaxValue);
 
         return labels?

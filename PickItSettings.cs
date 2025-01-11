@@ -19,9 +19,12 @@ public class PickItSettings : ISettings
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
-    public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
+    [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
+    public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
+    [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
@@ -30,12 +33,14 @@ public class PickItSettings : ISettings
     [Menu("No Looting While Enemy Close", "Will disable keypress pickit while enemies close by")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
-    public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
+    [Menu("Click Chests", "Will click chests if enabled")]
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
+    [Menu("Click Doors", "Will click doors if enabled")]
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
     [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
     public ToggleNode ClickTransitions { get; set; } = new ToggleNode(true);
-    public ToggleNode ItemizeCorpses { get; set; } = new ToggleNode(true);
+    [Menu("Click Corpses", "Will click corpses if enabled")]
+    public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();
