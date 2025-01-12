@@ -238,7 +238,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) <= Settings.ItemPickitRange))
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupSafeRange))
             return false;
         else
             return true;
@@ -285,7 +285,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return entity?.Path is { } path && (
                     path.Contains("DoorRandom", StringComparison.Ordinal) ||
                     path.Contains("Door", StringComparison.Ordinal) ||
-                    path.Contains("Endgame/TowerCompletion", StringComparison.Ordinal) ||
+                    path.Contains("AreaTransition_Animate", StringComparison.Ordinal) ||
+                    path.Contains("TowerCompletion", StringComparison.Ordinal) ||
                     path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
