@@ -13,71 +13,69 @@ namespace PickIt;
 
 public class PickItSettings : ISettings
 {
-    public ToggleNode Enable { get; set; } = new ToggleNode(false);
-    public ToggleNode ShowInventoryView { get; set; } = new ToggleNode(true);
-    public RangeNode<Vector2> InventoryPos { get; set; } = new RangeNode<Vector2>(new Vector2(0, 0), Vector2.Zero, new Vector2(4000, 4000));
+    public ToggleNode Enable { get; set; } = new(false);
+    public ToggleNode ShowInventoryView { get; set; } = new(true);
+    public RangeNode<Vector2> InventoryPos { get; set; } = new(new Vector2(0, 0), Vector2.Zero, new Vector2(4000, 4000));
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
-    public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
-    public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
-    [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
-    public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
-    public RangeNode<int> PickupSafeRange { get; set; } = new RangeNode<int>(1000, 1, 2500);
-    [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
-    public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
-    public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
+    public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new(false);
+    public ToggleNode PickUpEverything { get; set; } = new(false);
+    public RangeNode<int> ItemPickupRange { get; set; } = new(600, 1, 1000);
+    public RangeNode<int> MonsterCheckRange { get; set; } = new(1000, 1, 2500);
+
+    [Menu(null, "In milliseconds")]
+    public RangeNode<int> PauseBetweenClicks { get; set; } = new(100, 0, 500);
+
+    public ToggleNode IgnoreMoving { get; set; } = new(false);
+
     [ConditionalDisplay(nameof(IgnoreMoving), true)]
-    public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
-    [Menu("Auto Click Hovered Loot In Range", "Auto pick up any hovered items that matches filters or pickup everything if the 'pickup everything' option is enabled")]
-    public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
-    public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
+    public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new(20, 0, 1000);
+
+    [Menu(null, "Auto pick up any hovered items that match configured filters")]
+    public ToggleNode AutoClickHoveredLootInRange { get; set; } = new(false);
+
+    public ToggleNode SmoothCursorMovement { get; set; } = new(true);
+    public ToggleNode UseInputLock { get; set; } = new(true);
+
+    public ToggleNode LazyLooting { get; set; } = new(false);
+
     [ConditionalDisplay(nameof(LazyLooting), true)]
-    [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
-    public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
+    public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new(true);
+
     [ConditionalDisplay(nameof(LazyLooting), true)]
-    public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
-    [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
-    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
-    [Menu("Miscellaneous Pickit Options", "Pickit will click Doors, Chests, Corpses, Transitions, Portals")]
-    public ToggleNode MiscPickit { get; set; } = new ToggleNode(true);
-    [Menu("Misc Pickit Range", "Range at which we will pickit things that are not items (doors, chests, etc)")]
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(15, 0, 600);
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Chests", "Will click chests if enabled")]
-    public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Doors", "Will click doors if enabled")]
-    public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
-    [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    public ToggleNode ClickTransitions { get; set; } = new ToggleNode(false);
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Corpses", "Will click corpses if enabled")]
-    public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Portals", "Will click portals if enabled")]
-    public ToggleNode ClickPortals { get; set; } = new ToggleNode(false);
-    [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
-    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(15000, 100, 100000);
+    public HotkeyNode LazyLootingPauseKey { get; set; } = new(Keys.None);
+
+    [Menu(null, "Includes lazy looting as well as manual activation")]
+    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new(false);
+
+    public MiscClickableOptions MiscOptions { get; set; } = new();
 
     [JsonIgnore]
-    public TextNode FilterTest { get; set; } = new TextNode();
+    public TextNode FilterTest { get; set; } = new();
 
     [JsonIgnore]
-    public ButtonNode ReloadFilters { get; set; } = new ButtonNode();
+    public ButtonNode ReloadFilters { get; set; } = new();
 
     [Menu("Use a Custom \"\\config\\custom_folder\" folder ")]
-    public TextNode CustomConfigDir { get; set; } = new TextNode();
+    public TextNode CustomConfigDir { get; set; } = new();
 
-    public List<PickitRule> PickitRules = new List<PickitRule>();
+    public List<PickitRule> PickitRules = [];
 
     [JsonIgnore]
-    public FilterNode Filters { get; } = new FilterNode();
+    public FilterNode Filters { get; } = new();
 
     [Menu(null, "For debugging. Highlights items if they match an existing filter")]
     [JsonIgnore]
-    public ToggleNode DebugHighlight { get; set; } = new ToggleNode(false);
+    public ToggleNode DebugHighlight { get; set; } = new(false);
+}
+
+[Submenu(CollapsedByDefault = true)]
+public class MiscClickableOptions
+{
+    public RangeNode<int> MiscPickitRange { get; set; } = new(15, 0, 600);
+    public ToggleNode ClickChests { get; set; } = new(true);
+    public ToggleNode ClickDoors { get; set; } = new(true);
+    public ToggleNode ClickZoneTransitions { get; set; } = new(false);
 }
 
 [Submenu(RenderMethod = nameof(Render))]
@@ -85,6 +83,7 @@ public class FilterNode
 {
     public void Render(PickIt pickit)
     {
+        bool anyChanges = false;
         if (ImGui.Button("Open filter Folder"))
         {
             var configDir = pickit.ConfigDirectory;
@@ -109,24 +108,37 @@ public class FilterNode
         {
             ImGui.PushID(i);
             if (ImGui.ArrowButton("##upButton", ImGuiDir.Up) && i > 0)
+            {
                 (tempNpcInvRules[i - 1], tempNpcInvRules[i]) = (tempNpcInvRules[i], tempNpcInvRules[i - 1]);
+                anyChanges = true;
+            }
 
             ImGui.SameLine();
             ImGui.Text(" ");
             ImGui.SameLine();
 
             if (ImGui.ArrowButton("##downButton", ImGuiDir.Down) && i < tempNpcInvRules.Count - 1)
+            {
                 (tempNpcInvRules[i + 1], tempNpcInvRules[i]) = (tempNpcInvRules[i], tempNpcInvRules[i + 1]);
+                anyChanges = true;
+            }
 
             ImGui.SameLine();
             ImGui.Text(" - ");
             ImGui.SameLine();
 
-            ImGui.Checkbox($"{tempNpcInvRules[i].Name}###enabled", ref tempNpcInvRules[i].Enabled);
+            if (ImGui.Checkbox($"{tempNpcInvRules[i].Name}###enabled", ref tempNpcInvRules[i].Enabled))
+            {
+                anyChanges = true;
+            }
             ImGui.PopID();
         }
 
         pickit.Settings.PickitRules = tempNpcInvRules;
+        if (anyChanges)
+        {
+            pickit.LoadRuleFiles();
+        }
     }
 }
 
