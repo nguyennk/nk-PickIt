@@ -3,6 +3,8 @@ using System.Linq;
 using System.Numerics;
 using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.MemoryObjects;
+using ExileCore2.PoEMemory.Elements;
+using ExileCore2.PoEMemory.Elements.InventoryElements;
 using ItemFilterLibrary;
 
 namespace PickIt;
@@ -19,18 +21,20 @@ public partial class PickIt
         return FindSpotInventory(itemHeight, itemWidth) != null;
     }
 
-        const int width = 12;
-        const int height = 5;
+    const int width = 12;
+    const int height = 5;
     /// <summary>
     /// Finds a spot available in the inventory to place the item
     /// </summary>
     private Vector2? FindSpotInventory(ItemData item)
     {
-        var inventoryItems = _inventoryItems.InventorySlotItems;
+        var inventoryItems = _inventoryItems.VisibleInventoryItems;
         var itemToStackWith = inventoryItems.FirstOrDefault(x => CanItemBeStacked(item, x));
         if (itemToStackWith != null)
         {
-            return new Vector2(itemToStackWith.PosX, itemToStackWith.PosY);
+            var inventPosX = (int)(itemToStackWith.X / itemToStackWith.Width);
+            var inventPosY = (int)(itemToStackWith.Y / itemToStackWith.Height);
+            return new Vector2(inventPosX, inventPosY);
         }
 
         var itemHeight = item.Height;
@@ -53,10 +57,10 @@ public partial class PickIt
                 var obstructed = false;
 
                 for (var xWidth = 0; xWidth < itemWidth && !obstructed; xWidth++)
-                for (var yHeight = 0; yHeight < itemHeight && !obstructed; yHeight++)
-                {
-                    obstructed |= inventorySlots[yCol + yHeight, xRow + xWidth];
-                }
+                    for (var yHeight = 0; yHeight < itemHeight && !obstructed; yHeight++)
+                    {
+                        obstructed |= inventorySlots[yCol + yHeight, xRow + xWidth];
+                    }
 
                 if (!obstructed) return new Vector2(xRow, yCol);
             }
@@ -65,7 +69,7 @@ public partial class PickIt
         return null;
     }
 
-    private static bool CanItemBeStacked(ItemData item, ServerInventory.InventSlotItem inventoryItem)
+    private static bool CanItemBeStacked(ItemData item, NormalInventoryItem inventoryItem)
     {
         if (item.Entity.Path != inventoryItem.Item.Path)
             return false;
@@ -79,25 +83,25 @@ public partial class PickIt
         return inventoryItemStackComp.Size + itemStackComp.Size <= inventoryItemStackComp.Info.MaxStackSize;
     }
 
-    private bool[,] GetContainer2DArray(ServerInventory containerItems)
+    private bool[,] GetContainer2DArray(Inventory containerItems)
     {
-        var containerCells = new bool[containerItems.Rows, containerItems.Columns];
+        var containerCells = new bool[5, 12];
 
         try
         {
-            foreach (var item in containerItems.InventorySlotItems)
+            foreach (var item in containerItems.VisibleInventoryItems)
             {
-                var itemSizeX = item.SizeX;
-                var itemSizeY = item.SizeY;
-                var inventPosX = item.PosX;
-                var inventPosY = item.PosY;
+                var itemSizeX = item.Height;
+                var itemSizeY = item.Width;
+                var inventPosX = (int)(item.X / itemSizeX);
+                var inventPosY = (int)(item.Y / itemSizeY);
                 var startX = Math.Max(0, inventPosX);
                 var startY = Math.Max(0, inventPosY);
-                var endX = Math.Min(containerItems.Columns, inventPosX + itemSizeX);
-                var endY = Math.Min(containerItems.Rows, inventPosY + itemSizeY);
+                var endX = Math.Min(12, inventPosX);
+                var endY = Math.Min(5, inventPosY);
                 for (var y = startY; y < endY; y++)
-                for (var x = startX; x < endX; x++)
-                    containerCells[y, x] = true;
+                    for (var x = startX; x < endX; x++)
+                        containerCells[y, x] = true;
             }
         }
         catch (Exception e)
